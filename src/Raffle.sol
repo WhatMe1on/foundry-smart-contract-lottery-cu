@@ -8,7 +8,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__NotEnoughEtherSent();
     error Raffle__WinnerWithdrawFailed();
     error Raffle__RaffleStateNotOpen();
-    error Raffle__UpKeepNotFeeded(
+    error Raffle__UpKeepNotFeed(
                 uint256 time,
                 RaffleState state,
                 uint256 balance,
@@ -93,7 +93,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     function performUpKeep(bytes calldata /* performData */) external {
         (bool upkeepNeeded, ) = checkUpkeep("");
         if (!upkeepNeeded) {
-            revert Raffle__UpKeepNotFeeded(
+            revert Raffle__UpKeepNotFeed(
                 block.timestamp - s_lastTimestamp,
                 s_raffleState,
                 address(this).balance,
@@ -143,5 +143,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function getRaffleState() external view returns (RaffleState) {
         return s_raffleState;
+    }
+
+    function getIndexedPlayer(uint256 index) external view returns(address) {
+        return s_players[index];
     }
 }
