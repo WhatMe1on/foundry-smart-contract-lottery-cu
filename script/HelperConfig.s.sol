@@ -4,6 +4,7 @@ pragma solidity ^0.8.18;
 import {Script} from "forge-std/Script.sol";
 import {Raffle} from "../src/Raffle.sol";
 import {VRFCoordinatorV2_5Mock} from "chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
+import {LinkToken} from "../test/mock/LinkToken.sol";
 
 abstract contract Constants {
     uint96 public MOCK_BASE_FEE = 0.25 ether;
@@ -51,21 +52,23 @@ contract HelperConfig is Script, Constants{
 
 
         vm.startBroadcast();
-        VRFCoordinatorV2_5Mock VRFCoordinatorV2_5Mock = new VRFCoordinatorV2_5Mock(
+        VRFCoordinatorV2_5Mock coordinator = new VRFCoordinatorV2_5Mock(
             MOCK_BASE_FEE,
             MOCK_GAS_PRICE_LINK,
             MOCK_WEI_PER_UINT_LINK
         );
+        LinkToken link = new LinkToken();
         vm.stopBroadcast();
 
         return
             NetworkConfig({
                 entranceFee: 0.01 ether,
                 interval: 30,
-                vrfCoordinator: address(VRFCoordinatorV2_5Mock),
+                vrfCoordinator: address(coordinator),
                 keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
                 subscriptionId: 0, // Update with subId;
-                callbackGasLimit: 500000
+                callbackGasLimit: 500000,
+                link: address(link)
             });
     }
 

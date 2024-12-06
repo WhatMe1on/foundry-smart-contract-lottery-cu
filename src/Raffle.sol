@@ -3,17 +3,17 @@ pragma solidity ^0.8.18;
 
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {Script, console} from "forge-std/Script.sol";
 
-contract Raffle is VRFConsumerBaseV2Plus {
+contract Raffle is VRFConsumerBaseV2Plus,Script{
     error Raffle__NotEnoughEtherSent();
     error Raffle__WinnerWithdrawFailed();
     error Raffle__RaffleStateNotOpen();
     error Raffle__UpKeepNotFeed(
-                uint256 time,
-                RaffleState state,
-                uint256 balance,
-                uint256 length
-            );
+        bytes upKeepFlags,
+        uint256 balance,
+        uint256 length
+    );
 
     enum RaffleState {
         OPEN,
@@ -69,7 +69,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @dev Function is to check 
+     * @dev Function is to check
      * 1.Time has passed
      * 2.Raffle state is open
      * 3.Contract has eth
@@ -80,22 +80,30 @@ contract Raffle is VRFConsumerBaseV2Plus {
     )
         public
         view
-        returns (bool upkeepNeeded, bytes memory /* performData */)
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData */
+        )
     {
         bool timeHasPassed = block.timestamp - s_lastTimestamp >= i_interval;
         bool stateIsOpen = s_raffleState == RaffleState.OPEN;
         bool hasBalance = address(this).balance > 0;
         bool hasPlayer = s_players.length > 0;
+        // console.log(timeHasPassed);
+        // console.log(stateIsOpen);
+        // console.log(hasBalance);
+        // console.log(hasPlayer);
         upkeepNeeded = timeHasPassed && stateIsOpen && hasBalance && hasPlayer;
-        return (upkeepNeeded, "0x0");
+        //TODO if output false ,use event to replace the upKeepFlags, And compare the gas spent
+        bytes memory upKeepFlags = abi.encode(timeHasPassed,stateIsOpen,hasBalance,hasPlayer);
+        return (upkeepNeeded, upKeepFlags);
     }
 
     function performUpKeep(bytes calldata /* performData */) external {
-        (bool upkeepNeeded, ) = checkUpkeep("");
+        (bool upkeepNeeded, bytes memory upKeepFlags) = checkUpkeep("");
         if (!upkeepNeeded) {
             revert Raffle__UpKeepNotFeed(
-                block.timestamp - s_lastTimestamp,
-                s_raffleState,
+                upKeepFlags,
                 address(this).balance,
                 s_players.length
             );
@@ -145,7 +153,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         return s_raffleState;
     }
 
-    function getIndexedPlayer(uint256 index) external view returns(address) {
+    function getIndexedPlayer(uint256 index) external view returns (address) {
         return s_players[index];
     }
 }
