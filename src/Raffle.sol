@@ -95,6 +95,9 @@ contract Raffle is VRFConsumerBaseV2Plus,Script{
         // console.log(hasPlayer);
         upkeepNeeded = timeHasPassed && stateIsOpen && hasBalance && hasPlayer;
         //TODO if output false ,use event to replace the upKeepFlags, And compare the gas spent
+        // bytes memory outputFlagg = abi.encodePacked(uint8(0x02), timeHasPassed);
+
+                // console.log(hasPlayer);
         bytes memory upKeepFlags = abi.encode(timeHasPassed,stateIsOpen,hasBalance,hasPlayer);
         return (upkeepNeeded, upKeepFlags);
     }

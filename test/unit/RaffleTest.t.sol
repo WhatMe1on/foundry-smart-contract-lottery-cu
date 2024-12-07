@@ -6,6 +6,7 @@ import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Test, console} from "forge-std/Test.sol";
+import {CCEncoder} from "../../src/tools/CCEncoder.sol";
 
 contract RaffleTest is Test {
     event EnterRaffle(address indexed player);
@@ -97,10 +98,7 @@ contract RaffleTest is Test {
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfStateNotOpen()
-        public
-        M_prankPlayer
-    {
+    function testCheckUpkeepReturnsFalseIfStateNotOpen() public M_prankPlayer {
         raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
@@ -112,10 +110,7 @@ contract RaffleTest is Test {
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfBalanceZero()
-        public
-        M_prankPlayer
-    {
+    function testCheckUpkeepReturnsFalseIfBalanceZero() public M_prankPlayer {
         raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
@@ -127,17 +122,14 @@ contract RaffleTest is Test {
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfNoPlayer()
-        public
-        M_prankPlayer
-    {
+    function testCheckUpkeepReturnsFalseIfNoPlayer() public M_prankPlayer {
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
         vm.deal(address(raffle), 1 ether);
         bytes memory upKeepFlags = abi.encode(true, true, true, false);
 
         (, bytes memory flags) = raffle.checkUpkeep("");
-        
+
         assertEq(upKeepFlags, flags);
     }
 
@@ -155,7 +147,7 @@ contract RaffleTest is Test {
     function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue()
         public
         M_prankPlayer
-    {        
+    {
         raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
@@ -192,5 +184,30 @@ contract RaffleTest is Test {
     modifier M_enterRaffle() {
         raffle.enterRaffle{value: entranceFee}();
         _;
+    }
+}
+
+contract ToolTest is Test {
+    using CCEncoder for bool;
+    using CCEncoder for bool[];
+
+    function testCastSingleTrueFlag() public {
+        bool trueFlag = true;
+        assertEq(trueFlag.castFlag(), bytes("1"));
+    }
+
+    function testCastSingleFalseFlag() public {
+        bool falseFlag = false;
+        assertEq(falseFlag.castFlag(), bytes("0"));
+    }
+
+    function testCastMultiFlag() public {
+        bool[] memory flags = new bool[](4);
+        flags[0] = true;
+        flags[1] = false;
+        flags[2] = false;
+        flags[3] = false;
+
+        assertEq(flags.castFlags(), bytes.concat(bytes("1"), bytes("0"), bytes("0"), bytes("0")));
     }
 }
