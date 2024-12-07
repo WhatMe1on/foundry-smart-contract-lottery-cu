@@ -4,7 +4,8 @@ out = "out"
 libs = ["lib"]
 remappings = [
     "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",
-    "@solmate/=lib/solmate/src/"
+    "@solmate/=lib/solmate/src/",
+    "~homesrc=/home/ccacr/solidity-course/foundry-f23/foundry-smart-contract-lottery-cu/src"
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

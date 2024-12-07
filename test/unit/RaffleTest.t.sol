@@ -7,8 +7,12 @@ import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {CCEncoder} from "../../src/tools/CCEncoder.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {CCEncoder} from "~homesrc/tools/CCEncoder.sol";
 
 contract RaffleTest is Test {
+    using CCEncoder for bool[];
+    using CCEncoder for bool[4];
     event EnterRaffle(address indexed player);
 
     Raffle raffle;
@@ -19,6 +23,25 @@ contract RaffleTest is Test {
     address public PlayerAddress = makeAddr("player");
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
 
+    /* Modifiers */
+    modifier M_prankPlayer() {
+        vm.startPrank(PlayerAddress);
+        _;
+        vm.stopPrank();
+    }
+
+    modifier M_enterRaffle() {
+        raffle.enterRaffle{value: entranceFee}();
+        _;
+    }
+
+    modifier M_timePassed() {
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    /* Functions */
     function setUp() external {
         DeployRaffle deployRaffle = new DeployRaffle();
         (raffle, helperConfig) = deployRaffle.run();
@@ -51,10 +74,12 @@ contract RaffleTest is Test {
         raffle.enterRaffle{value: entranceFee}();
     }
 
-    function testCantEnterWhenRaffleIsCalculating() public M_prankPlayer {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+    function testCantEnterWhenRaffleIsCalculating()
+        public
+        M_prankPlayer
+        M_enterRaffle
+        M_timePassed
+    {
         raffle.performUpKeep("");
 
         vm.expectRevert(Raffle.Raffle__RaffleStateNotOpen.selector);
@@ -64,9 +89,8 @@ contract RaffleTest is Test {
     function testCheckUpkeepReturnsFalseIfItHasNoBalance()
         public
         M_prankPlayer
+        M_timePassed
     {
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
         // raffle.enterRaffle();
 
         (bool upKeepNeeded, ) = raffle.checkUpkeep("");
@@ -74,10 +98,12 @@ contract RaffleTest is Test {
         assert(!upKeepNeeded);
     }
 
-    function testCheckUpkeepReturnsFalseIfRaffleNotOpen() public M_prankPlayer {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+    function testCheckUpkeepReturnsFalseIfRaffleNotOpen()
+        public
+        M_prankPlayer
+        M_enterRaffle
+        M_timePassed
+    {
         raffle.performUpKeep("");
 
         (bool upkeepFlag, ) = raffle.checkUpkeep("");
@@ -87,22 +113,26 @@ contract RaffleTest is Test {
     function testCheckUpkeepReturnsFalseIfEnoughTimeHasNotPassed()
         public
         M_prankPlayer
+        M_enterRaffle
     {
-        raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + 1);
         vm.roll(block.number + 1);
-        bytes memory upKeepFlags = abi.encode(false, true, true, true);
+        bool[4] memory inputflags = [false, true, true, true];
+        bytes memory upKeepFlags = inputflags.castFlags();
 
         (, bytes memory flags) = raffle.checkUpkeep("");
 
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfStateNotOpen() public M_prankPlayer {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
-        bytes memory upKeepFlags = abi.encode(true, false, true, true);
+    function testCheckUpkeepReturnsFalseIfStateNotOpen()
+        public
+        M_prankPlayer
+        M_enterRaffle
+        M_timePassed
+    {
+        bool[4] memory inputflags = [true, false, true, true];
+        bytes memory upKeepFlags = inputflags.castFlags();
         raffle.performUpKeep("");
 
         (, bytes memory flags) = raffle.checkUpkeep("");
@@ -110,23 +140,30 @@ contract RaffleTest is Test {
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfBalanceZero() public M_prankPlayer {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+    function testCheckUpkeepReturnsFalseIfBalanceZero()
+        public
+        M_prankPlayer
+        M_enterRaffle
+        M_timePassed
+    {
         vm.deal(address(raffle), 0);
-        bytes memory upKeepFlags = abi.encode(true, true, false, true);
+        bool[4] memory inputflags = [true, true, false, true];
+
+        bytes memory upKeepFlags = inputflags.castFlags();
 
         (, bytes memory flags) = raffle.checkUpkeep("");
 
         assertEq(upKeepFlags, flags);
     }
 
-    function testCheckUpkeepReturnsFalseIfNoPlayer() public M_prankPlayer {
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+    function testCheckUpkeepReturnsFalseIfNoPlayer()
+        public
+        M_prankPlayer
+        M_timePassed
+    {
         vm.deal(address(raffle), 1 ether);
-        bytes memory upKeepFlags = abi.encode(true, true, true, false);
+        bool[4] memory inputflags = [true, true, true, false];
+        bytes memory upKeepFlags = inputflags.castFlags();
 
         (, bytes memory flags) = raffle.checkUpkeep("");
 
@@ -136,10 +173,9 @@ contract RaffleTest is Test {
     function testCheckUpkeepReturnsTrueWhenParametersAreGood()
         public
         M_prankPlayer
+        M_enterRaffle
+        M_timePassed
     {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         assert(upkeepNeeded);
     }
@@ -147,22 +183,21 @@ contract RaffleTest is Test {
     function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue()
         public
         M_prankPlayer
+        M_enterRaffle
+        M_timePassed
     {
-        raffle.enterRaffle{value: entranceFee}();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
         raffle.performUpKeep("");
     }
 
     function testPerformUpkeepRevertsIfCheckUpkeepIsFalse()
         public
         M_prankPlayer
+        M_enterRaffle
     {
-        raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + 1);
-        vm.roll(block.number + 1);
-        //TODO encode msg can be shorter like "0,1,1,1", maybe can implement a custom Encoder
-        bytes memory upKeepFlags = abi.encode(false, true, true, true);
+        vm.roll(block.number + 1);        
+        bool[4] memory inputflags = [false, true, true, true];
+        bytes memory upKeepFlags = inputflags.castFlags();
 
         bytes memory expectedRevertData = abi.encodeWithSelector(
             Raffle.Raffle__UpKeepNotFeed.selector,
@@ -174,16 +209,21 @@ contract RaffleTest is Test {
         raffle.performUpKeep("");
     }
 
-    /* Modifiers */
-    modifier M_prankPlayer() {
-        vm.startPrank(PlayerAddress);
-        _;
-        vm.stopPrank();
-    }
+    function testPerformUpkeepUpdateRaffleStateAndEmitsRequestId()
+        public
+        M_enterRaffle
+        M_enterRaffle
+        M_timePassed
+    {
+        vm.recordLogs();
+        raffle.performUpKeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
 
-    modifier M_enterRaffle() {
-        raffle.enterRaffle{value: entranceFee}();
-        _;
+        Raffle.RaffleState raffleState = raffle.getRaffleState();
+        console.log(uint256(raffleState));
+        // assert(uint256(requestId) > 0);
+        assert(raffleState == Raffle.RaffleState.CALCULATING);
     }
 }
 
@@ -191,23 +231,26 @@ contract ToolTest is Test {
     using CCEncoder for bool;
     using CCEncoder for bool[];
 
-    function testCastSingleTrueFlag() public {
+    function testCastSingleTrueFlag() public pure{
         bool trueFlag = true;
         assertEq(trueFlag.castFlag(), bytes("1"));
     }
 
-    function testCastSingleFalseFlag() public {
+    function testCastSingleFalseFlag() public pure{
         bool falseFlag = false;
         assertEq(falseFlag.castFlag(), bytes("0"));
     }
 
-    function testCastMultiFlag() public {
+    function testCastMultiFlag() public pure {
         bool[] memory flags = new bool[](4);
         flags[0] = true;
         flags[1] = false;
         flags[2] = false;
         flags[3] = false;
 
-        assertEq(flags.castFlags(), bytes.concat(bytes("1"), bytes("0"), bytes("0"), bytes("0")));
+        assertEq(
+            flags.castFlags(),
+            bytes.concat(bytes("1"), bytes("0"), bytes("0"), bytes("0"))
+        );
     }
 }

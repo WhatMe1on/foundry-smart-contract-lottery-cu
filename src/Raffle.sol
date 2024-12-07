@@ -4,22 +4,11 @@ pragma solidity ^0.8.18;
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {Script, console} from "forge-std/Script.sol";
+import {CCEncoder} from "./tools/CCEncoder.sol";
 
-contract Raffle is VRFConsumerBaseV2Plus,Script{
-    error Raffle__NotEnoughEtherSent();
-    error Raffle__WinnerWithdrawFailed();
-    error Raffle__RaffleStateNotOpen();
-    error Raffle__UpKeepNotFeed(
-        bytes upKeepFlags,
-        uint256 balance,
-        uint256 length
-    );
 
-    enum RaffleState {
-        OPEN,
-        CALCULATING
-    }
-
+contract Raffle is VRFConsumerBaseV2Plus, Script {
+    using CCEncoder for bool[];
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
     uint256 private constant ROLL_IN_PROGRESS = 42;
@@ -38,6 +27,22 @@ contract Raffle is VRFConsumerBaseV2Plus,Script{
 
     event EnterRaffle(address indexed player);
     event WinnerPicked(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
+
+    error Raffle__NotEnoughEtherSent();
+    error Raffle__WinnerWithdrawFailed();
+    error Raffle__RaffleStateNotOpen();
+    error Raffle__UpKeepNotFeed(
+        bytes upKeepFlags,
+        uint256 balance,
+        uint256 length
+    );
+
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
+
 
     constructor(
         uint256 entranceFee,
@@ -77,28 +82,22 @@ contract Raffle is VRFConsumerBaseV2Plus,Script{
      */
     function checkUpkeep(
         bytes memory /* checkData */
-    )
-        public
-        view
-        returns (
-            bool upkeepNeeded,
-            bytes memory /* performData */
-        )
-    {
-        bool timeHasPassed = block.timestamp - s_lastTimestamp >= i_interval;
-        bool stateIsOpen = s_raffleState == RaffleState.OPEN;
-        bool hasBalance = address(this).balance > 0;
-        bool hasPlayer = s_players.length > 0;
-        // console.log(timeHasPassed);
-        // console.log(stateIsOpen);
-        // console.log(hasBalance);
-        // console.log(hasPlayer);
-        upkeepNeeded = timeHasPassed && stateIsOpen && hasBalance && hasPlayer;
+    ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
+        bool[] memory flags = new bool[](4);
+        upkeepNeeded = true;
+
+        flags[0] = block.timestamp - s_lastTimestamp >= i_interval;
+        flags[1] = s_raffleState == RaffleState.OPEN;
+        flags[2] = address(this).balance > 0;
+        flags[3] = s_players.length > 0;
         //TODO if output false ,use event to replace the upKeepFlags, And compare the gas spent
         // bytes memory outputFlagg = abi.encodePacked(uint8(0x02), timeHasPassed);
 
-                // console.log(hasPlayer);
-        bytes memory upKeepFlags = abi.encode(timeHasPassed,stateIsOpen,hasBalance,hasPlayer);
+        // console.log(hasPlayer);
+        bytes memory upKeepFlags = flags.castFlags();
+        for (uint256 i = 0; i < flags.length; i++) {
+            upkeepNeeded = upkeepNeeded && flags[i];
+        }
         return (upkeepNeeded, upKeepFlags);
     }
 
@@ -113,7 +112,7 @@ contract Raffle is VRFConsumerBaseV2Plus,Script{
         }
 
         s_raffleState = RaffleState.CALCULATING;
-        s_vrfCoordinator.requestRandomWords(
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
             VRFV2PlusClient.RandomWordsRequest({
                 keyHash: i_keyHash,
                 subId: i_subscriptionId,
@@ -126,6 +125,8 @@ contract Raffle is VRFConsumerBaseV2Plus,Script{
                 )
             })
         );
+
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
