@@ -137,9 +137,9 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
         s_players = new address payable[](0);
         s_lastTimestamp = block.timestamp;
         emit WinnerPicked(s_recentWinner);
-        (bool success, ) = s_recentWinner.call{value: address(this).balance}(
-            ""
-        );
+        console.log(address(this));
+        console.log(address(this).balance);
+        (bool success, ) = s_recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__WinnerWithdrawFailed();
         }
@@ -157,5 +157,13 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
 
     function getIndexedPlayer(uint256 index) external view returns (address) {
         return s_players[index];
+    }
+
+    function getLastTimeStamp() external view returns (uint256) {
+        return s_lastTimestamp;
+    }
+
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
     }
 }
