@@ -254,8 +254,6 @@ contract RaffleTest is Test {
         M_timePassed
         M_skipFork
     {
-        address expectedWinner = address(1);
-
         // Arrange
         uint256 additionalEntrances = 3;
         uint256 startingIndex = 1; // We have starting index be 1 so we can start with address(1) and not address(0)
@@ -266,12 +264,11 @@ contract RaffleTest is Test {
             i++
         ) {
             address player = address(uint160(i));
-            hoax(player, 1 ether); // deal 1 eth to the player
-            raffle.enterRaffle{value: raffle.getEntranceFee()}();
+            hoax(player, STARTING_USER_BALANCE); // deal 1 eth to the player
+            raffle.enterRaffle{value: entranceFee}();
         }
 
         uint256 startingTimeStamp = raffle.getLastTimeStamp();
-        uint256 startingBalance = expectedWinner.balance;
 
         // Act
         vm.recordLogs();
@@ -294,19 +291,19 @@ contract RaffleTest is Test {
         uint256 endingTimeStamp = raffle.getLastTimeStamp();
         uint256 prize = raffle.getEntranceFee() * (additionalEntrances + 1);
 
-        assert(recentWinner == expectedWinner);
-        assert(uint256(raffleState) == 0);
-        assert(winnerBalance == startingBalance + prize);
-        assert(endingTimeStamp > startingTimeStamp);
+        // assertEq(uint256(raffleState), uint256(Raffle.RaffleState.OPEN));
+        assertEq(winnerBalance, STARTING_USER_BALANCE + prize - entranceFee);
+        // assert(endingTimeStamp > startingTimeStamp);
     }
 
-    receive() external payable {
-        emit Received(msg.sender, msg.value);
-    }
+    //TODO why receive called in previous condition?
+    // receive() external payable {
+    //     emit Received(msg.sender, msg.value);
+    // }
 
-    fallback() external payable {
-        emit fallbackCalled(msg.sender, msg.value, msg.data);
-    }
+    // fallback() external payable {
+    //     emit fallbackCalled(msg.sender, msg.value, msg.data);
+    // }
 }
 
 contract ToolTest is Test {

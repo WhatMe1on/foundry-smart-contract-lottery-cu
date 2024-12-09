@@ -137,8 +137,6 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
         s_players = new address payable[](0);
         s_lastTimestamp = block.timestamp;
         emit WinnerPicked(s_recentWinner);
-        console.log(address(this));
-        console.log(address(this).balance);
         (bool success, ) = s_recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__WinnerWithdrawFailed();

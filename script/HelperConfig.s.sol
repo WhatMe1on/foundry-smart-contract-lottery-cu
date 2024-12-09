@@ -9,7 +9,7 @@ import {LinkToken} from "../test/mock/LinkToken.sol";
 abstract contract Constants {
     uint96 public MOCK_BASE_FEE = 0.25 ether;
     uint96 public MOCK_GAS_PRICE_LINK = 1e9;
-    int256 public MOCK_WEI_PER_UINT_LINK = 4e15;
+    int256 public MOCK_WEI_PER_UINT_LINK = 4e18;
 }
 
 contract HelperConfig is Script, Constants{
