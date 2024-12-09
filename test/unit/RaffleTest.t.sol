@@ -15,6 +15,8 @@ contract RaffleTest is Test {
     using CCEncoder for bool[];
     using CCEncoder for bool[4];
     event EnterRaffle(address indexed player);
+    event fallbackCalled(address Sender, uint Value, bytes Data);
+    event Received(address Sender, uint Value);
 
     Raffle raffle;
     HelperConfig helperConfig;
@@ -82,7 +84,11 @@ contract RaffleTest is Test {
         assertEq(addressFromRaffle, PlayerAddress);
     }
 
-    function testEmitsEventOnEntrance() public M_startPrankPlayer M_enterRaffle {
+    function testEmitsEventOnEntrance()
+        public
+        M_startPrankPlayer
+        M_enterRaffle
+    {
         vm.expectEmit(true, false, false, false, address(raffle));
         emit EnterRaffle(PlayerAddress);
         raffle.enterRaffle{value: entranceFee}();
@@ -292,6 +298,14 @@ contract RaffleTest is Test {
         assert(uint256(raffleState) == 0);
         assert(winnerBalance == startingBalance + prize);
         assert(endingTimeStamp > startingTimeStamp);
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+
+    fallback() external payable {
+        emit fallbackCalled(msg.sender, msg.value, msg.data);
     }
 }
 
