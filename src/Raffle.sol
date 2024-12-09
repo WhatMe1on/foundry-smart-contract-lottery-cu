@@ -6,7 +6,6 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
 import {Script, console} from "forge-std/Script.sol";
 import {CCEncoder} from "./tools/CCEncoder.sol";
 
-
 contract Raffle is VRFConsumerBaseV2Plus, Script {
     using CCEncoder for bool[];
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
@@ -42,7 +41,6 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
         OPEN,
         CALCULATING
     }
-
 
     constructor(
         uint256 entranceFee,
@@ -101,7 +99,7 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
         return (upkeepNeeded, upKeepFlags);
     }
 
-    function performUpKeep(bytes calldata /* performData */) external {
+    function performUpkeep(bytes calldata /* performData */) external {
         (bool upkeepNeeded, bytes memory upKeepFlags) = checkUpkeep("");
         if (!upkeepNeeded) {
             revert Raffle__UpKeepNotFeed(

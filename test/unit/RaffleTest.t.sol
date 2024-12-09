@@ -80,7 +80,7 @@ contract RaffleTest is Test {
         M_enterRaffle
         M_timePassed
     {
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
 
         vm.expectRevert(Raffle.Raffle__RaffleStateNotOpen.selector);
         raffle.enterRaffle{value: entranceFee}();
@@ -104,7 +104,7 @@ contract RaffleTest is Test {
         M_enterRaffle
         M_timePassed
     {
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
 
         (bool upkeepFlag, ) = raffle.checkUpkeep("");
         assert(!upkeepFlag);
@@ -133,7 +133,7 @@ contract RaffleTest is Test {
     {
         bool[4] memory inputflags = [true, false, true, true];
         bytes memory upKeepFlags = inputflags.castFlags();
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
 
         (, bytes memory flags) = raffle.checkUpkeep("");
 
@@ -186,7 +186,7 @@ contract RaffleTest is Test {
         M_enterRaffle
         M_timePassed
     {
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
     }
 
     function testPerformUpkeepRevertsIfCheckUpkeepIsFalse()
@@ -195,7 +195,7 @@ contract RaffleTest is Test {
         M_enterRaffle
     {
         vm.warp(block.timestamp + 1);
-        vm.roll(block.number + 1);        
+        vm.roll(block.number + 1);
         bool[4] memory inputflags = [false, true, true, true];
         bytes memory upKeepFlags = inputflags.castFlags();
 
@@ -206,7 +206,7 @@ contract RaffleTest is Test {
             1
         );
         vm.expectRevert(expectedRevertData);
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
     }
 
     function testPerformUpkeepUpdateRaffleStateAndEmitsRequestId()
@@ -216,13 +216,13 @@ contract RaffleTest is Test {
         M_timePassed
     {
         vm.recordLogs();
-        raffle.performUpKeep("");
+        raffle.performUpkeep("");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bytes32 requestId = entries[1].topics[1];
 
         Raffle.RaffleState raffleState = raffle.getRaffleState();
-        console.log(uint256(raffleState));
-        // assert(uint256(requestId) > 0);
+        // console.log(uint256(raffleState));
+        assert(uint256(requestId) > 0);
         assert(raffleState == Raffle.RaffleState.CALCULATING);
     }
 }
@@ -231,12 +231,12 @@ contract ToolTest is Test {
     using CCEncoder for bool;
     using CCEncoder for bool[];
 
-    function testCastSingleTrueFlag() public pure{
+    function testCastSingleTrueFlag() public pure {
         bool trueFlag = true;
         assertEq(trueFlag.castFlag(), bytes("1"));
     }
 
-    function testCastSingleFalseFlag() public pure{
+    function testCastSingleFalseFlag() public pure {
         bool falseFlag = false;
         assertEq(falseFlag.castFlag(), bytes("0"));
     }

@@ -420,7 +420,7 @@ Anchors for Contract "Raffle" (solc 0.8.19, source ID 44):
   - Refers to item: Statement (location: source ID 44, line 98, chars 3214-3248, hits: 6)
 - IC 397 -> Item 240
 - Creation code
-  - Refers to item: Function "performUpKeep" (location: source ID 44, line 101, chars 3261-4252, hits: 4)
+  - Refers to item: Function "performUpkeep" (location: source ID 44, line 101, chars 3261-4252, hits: 4)
 - IC 1435 -> Item 241
 - Creation code
   - Refers to item: Line (location: source ID 44, line 102, chars 3337-3400, hits: 4)
