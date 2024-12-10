@@ -332,4 +332,15 @@ contract ToolTest is Test {
             bytes.concat(bytes("1"), bytes("0"), bytes("0"), bytes("0"))
         );
     }
+
+
+    //3way to get a function's selector (case1's 'this' can be replace to a instance of a contract);
+    function testEncoderWithSelector() public pure {
+        bytes4 output1 = this.testCastMultiFlag.selector;
+        bytes4 output2 = bytes4(keccak256("testCastMultiFlag()"));
+        bytes4 output3 = bytes4(abi.encodeWithSignature("testCastMultiFlag()"));
+
+        assertEq(output1, output2);
+        assertEq(output3, output2);
+    }
 }
