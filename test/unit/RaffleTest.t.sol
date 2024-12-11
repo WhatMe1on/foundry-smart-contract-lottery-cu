@@ -335,11 +335,12 @@ contract ToolTest is Test {
 
 
     //3way to get a function's selector (case1's 'this' can be replace to a instance of a contract);
-    function testEncoderWithSelector() public pure {
+    function testEncoderWithSelector() public view {
         bytes4 output1 = this.testCastMultiFlag.selector;
         bytes4 output2 = bytes4(keccak256("testCastMultiFlag()"));
         bytes4 output3 = bytes4(abi.encodeWithSignature("testCastMultiFlag()"));
 
+        console.log(address(this));
         assertEq(output1, output2);
         assertEq(output3, output2);
     }
