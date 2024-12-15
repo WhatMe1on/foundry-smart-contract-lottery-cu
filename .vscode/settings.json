@@ -2,4 +2,5 @@
     "search.exclude": {
         "/lib/**": true,
     },
+    "commentTranslate.source": "Copilot",
 }

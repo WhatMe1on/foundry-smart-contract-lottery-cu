@@ -8,6 +8,7 @@ import {CCEncoder} from "./tools/CCEncoder.sol";
 
 contract Raffle is VRFConsumerBaseV2Plus, Script {
     using CCEncoder for bool[];
+
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
     uint256 private constant ROLL_IN_PROGRESS = 42;
@@ -31,11 +32,7 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
     error Raffle__NotEnoughEtherSent();
     error Raffle__WinnerWithdrawFailed();
     error Raffle__RaffleStateNotOpen();
-    error Raffle__UpKeepNotFeed(
-        bytes upKeepFlags,
-        uint256 balance,
-        uint256 length
-    );
+    error Raffle__UpKeepNotFeed(bytes upKeepFlags, uint256 balance, uint256 length);
 
     enum RaffleState {
         OPEN,
@@ -78,9 +75,11 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
      * 3.Contract has eth
      * 4.Subscription is funded with Link
      */
-    function checkUpkeep(
-        bytes memory /* checkData */
-    ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
+    function checkUpkeep(bytes memory /* checkData */ )
+        public
+        view
+        returns (bool upkeepNeeded, bytes memory /* performData */ )
+    {
         bool[] memory flags = new bool[](4);
         upkeepNeeded = true;
 
@@ -99,14 +98,10 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
         return (upkeepNeeded, upKeepFlags);
     }
 
-    function performUpkeep(bytes calldata /* performData */) external {
+    function performUpkeep(bytes calldata /* performData */ ) external {
         (bool upkeepNeeded, bytes memory upKeepFlags) = checkUpkeep("");
         if (!upkeepNeeded) {
-            revert Raffle__UpKeepNotFeed(
-                upKeepFlags,
-                address(this).balance,
-                s_players.length
-            );
+            revert Raffle__UpKeepNotFeed(upKeepFlags, address(this).balance, s_players.length);
         }
 
         s_raffleState = RaffleState.CALCULATING;
@@ -118,33 +113,29 @@ contract Raffle is VRFConsumerBaseV2Plus, Script {
                 callbackGasLimit: i_callbackGasLimit,
                 numWords: NUM_WORDS,
                 // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
-                extraArgs: VRFV2PlusClient._argsToBytes(
-                    VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
-                )
+                extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
             })
         );
 
         emit RequestedRaffleWinner(requestId);
     }
 
-    function fulfillRandomWords(
-        uint256 /* requestId */,
-        uint256[] calldata randomWords
-    ) internal virtual override {
+    function fulfillRandomWords(uint256, /* requestId */ uint256[] calldata randomWords) internal virtual override {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         s_recentWinner = s_players[indexOfWinner];
         s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
         s_lastTimestamp = block.timestamp;
         emit WinnerPicked(s_recentWinner);
-        (bool success, ) = s_recentWinner.call{value: address(this).balance}("");
+        (bool success,) = s_recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__WinnerWithdrawFailed();
         }
     }
 
-    /**Getter Function */
-
+    /**
+     * Getter Function
+     */
     function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
     }
